@@ -1,8 +1,10 @@
 use reqwest;
-use serde::Deserialize;
+use anyhow::{anyhow, Result}; // Import anyhow Result
 use std::collections::HashMap;
 
 use chrono::Utc;
+
+use super::models::{ExchangeInfo, NewOrderResponse}; // Import NewOrderResponse
 
 pub struct BinanceApiClient {
     pub api_key: String,
@@ -14,7 +16,7 @@ impl BinanceApiClient {
         api_key: &str,
         api_secret: &str,
         symbol: &str,
-    ) -> Result<String, reqwest::Error> {
+    ) -> Result<String> {
         let url = format!(
             "https://api.binance.com/api/v3/ticker/bookTicker?symbol={}",
             symbol
@@ -30,10 +32,10 @@ impl BinanceApiClient {
         let body = response.text().await?;
         let exchange_info: ExchangeInfo = serde_json::from_str(&body)?;
 
-        if let Some(symbol_info) = exchange_info.symbols.iter().find(|s| s.symbol == symbol) {
-            Ok(symbol_info.bidPrice.clone())
-        } else {
-            Err(reqwest::Error::custom("Symbol not found"))
+        // Use match to handle the Result and return either Ok or Err
+        match exchange_info.symbols.iter().find(|s| s.symbol == symbol) {
+            Some(symbol_info) => Ok(symbol_info.bidPrice.clone()),
+            None => Err(anyhow!("Symbol not found")),
         }
     }
 
@@ -43,7 +45,8 @@ impl BinanceApiClient {
         symbol: &str,
         qty: &str,
         price: &str,
-    ) -> Result<NewOrderResponse, reqwest::Error> {
+    ) -> Result<NewOrderResponse> {
+        let timestamp = Utc::now().timestamp_millis().to_string();
         let url = "https://api.binance.com/api/v3/order";
         let params: HashMap<&str, &str> = [
             ("symbol", symbol),
@@ -52,7 +55,7 @@ impl BinanceApiClient {
             ("timeInForce", "GTC"),
             ("quantity", qty),
             ("price", price),
-            ("timestamp", &Utc::now().timestamp_millis().to_string()),
+            ("timestamp", &timestamp),
         ]
         .iter()
         .cloned()
@@ -77,14 +80,15 @@ impl BinanceApiClient {
         api_secret: &str,
         symbol: &str,
         qty: &str,
-    ) -> Result<NewOrderResponse, reqwest::Error> {
+    ) -> Result<NewOrderResponse> {
+        let timestamp = Utc::now().timestamp_millis().to_string();
         let url = "https://fapi.binance.com/fapi/v1/order";
         let params: HashMap<&str, &str> = [
             ("symbol", symbol),
             ("side", "SELL"),
             ("type", "MARKET"),
             ("quantity", qty),
-            ("timestamp", &Utc::now().timestamp_millis().to_string()),
+            ("timestamp", &timestamp),
         ]
         .iter()
         .cloned()

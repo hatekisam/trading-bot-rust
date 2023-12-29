@@ -2,21 +2,21 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct SymbolInfo {
-    symbol: String,
-    bidPrice: String,
+    pub symbol: String,
+    pub bidPrice: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ExchangeInfo {
-    symbols: Vec<SymbolInfo>,
+    pub symbols: Vec<SymbolInfo>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct NewOrderResponse {
-    symbol: String,
-    orderId: u64,
-    origQty: String,
-    executedQty: String,
+    pub symbol: String,
+    pub orderId: u64,
+    pub origQty: String,
+    pub executedQty: String,
 }
 
 
