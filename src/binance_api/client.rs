@@ -1,22 +1,19 @@
-use reqwest;
 use anyhow::{anyhow, Result}; // Import anyhow Result
+use reqwest;
 use std::collections::HashMap;
 
 use chrono::Utc;
 
 use super::models::{ExchangeInfo, NewOrderResponse}; // Import NewOrderResponse
 
+#[derive(Debug)]
 pub struct BinanceApiClient {
     pub api_key: String,
     pub api_secret: String,
 }
 
 impl BinanceApiClient {
-    pub async fn get_spot_best_bid(
-        api_key: &str,
-        api_secret: &str,
-        symbol: &str,
-    ) -> Result<String> {
+    pub async fn get_spot_best_bid(&self, symbol: &str) -> Result<String> {
         let url = format!(
             "https://api.binance.com/api/v3/ticker/bookTicker?symbol={}",
             symbol
@@ -25,14 +22,13 @@ impl BinanceApiClient {
         let client = reqwest::Client::new();
         let response = client
             .get(&url)
-            .header("X-MBX-APIKEY", api_key)
+            .header("X-MBX-APIKEY", &self.api_key)
             .send()
             .await?;
 
         let body = response.text().await?;
         let exchange_info: ExchangeInfo = serde_json::from_str(&body)?;
 
-        // Use match to handle the Result and return either Ok or Err
         match exchange_info.symbols.iter().find(|s| s.symbol == symbol) {
             Some(symbol_info) => Ok(symbol_info.bidPrice.clone()),
             None => Err(anyhow!("Symbol not found")),
@@ -40,8 +36,7 @@ impl BinanceApiClient {
     }
 
     pub async fn place_spot_limit_order(
-        api_key: &str,
-        api_secret: &str,
+        &self,
         symbol: &str,
         qty: &str,
         price: &str,
@@ -64,7 +59,7 @@ impl BinanceApiClient {
         let client = reqwest::Client::new();
         let response = client
             .post(url)
-            .header("X-MBX-APIKEY", api_key)
+            .header("X-MBX-APIKEY", &self.api_key)
             .form(&params)
             .send()
             .await?;
@@ -76,8 +71,7 @@ impl BinanceApiClient {
     }
 
     pub async fn place_futures_market_order(
-        api_key: &str,
-        api_secret: &str,
+        &self,
         symbol: &str,
         qty: &str,
     ) -> Result<NewOrderResponse> {
@@ -97,7 +91,7 @@ impl BinanceApiClient {
         let client = reqwest::Client::new();
         let response = client
             .post(url)
-            .header("X-MBX-APIKEY", api_key)
+            .header("X-MBX-APIKEY", &self.api_key)
             .form(&params)
             .send()
             .await?;

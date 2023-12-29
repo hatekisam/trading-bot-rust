@@ -31,7 +31,11 @@ impl TradingBot {
 
     pub async fn execute_trade(&self, amount_to_trade: f64) {
         // Get the best bid price from the spot market
-        let spot_bid_price = self.api_client.get_spot_best_bid(&self.spot_symbol).await.unwrap();
+        let spot_bid_price = self
+            .api_client
+            .get_spot_best_bid(&self.spot_symbol)
+            .await
+            .unwrap();
 
         // Calculate order quantity based on the amount and spot bid price
         let order_qty = (amount_to_trade / spot_bid_price.parse::<f64>().unwrap()).to_string();
@@ -43,15 +47,16 @@ impl TradingBot {
             .await
             .unwrap();
         println!("Spot Order Response: {:?}", spot_order_response);
+        let futures_trade_price = get_latest_futures_trade_price().await.unwrap();
         let futures_order_response = self
             .api_client
             .place_futures_market_order(&self.futures_symbol, &order_qty)
             .await
             .unwrap();
         println!("Futures Order Response: {:?}", futures_order_response);
-
-        // Calculate and print the spread in basis points
-        let spread = spot_bid_price.parse::<f64>().unwrap() - futures_order_response.price.parse::<f64>().unwrap();
+        // Assuming `avgPrice` is the correct field name in NewOrderResponse
+        let spread = spot_bid_price.parse::<f64>().unwrap()
+            - futures_order_response.avg_price.parse::<f64>().unwrap();
         println!("Spread: {} bps", spread);
     }
 }
